@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Business — Meeting Board</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            body: ['DM Sans', 'sans-serif'],
+          },
+          colors: {
+            ink: '#0A0A0A',
+            paper: '#F5F2EB',
+            accent: '#FF4D1C',
+            muted: '#8A8680',
+            surface: '#EDEAE2',
+            border: '#D8D4CC',
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.4s ease forwards',
+            'slide-up': 'slideUp 0.35s ease forwards',
+          },
+          keyframes: {
+            fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
+            slideUp: { from: { opacity: 0, transform: 'translateY(12px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; background: #F5F2EB; color: #0A0A0A; }
+    h1, h2, h3, h4, .font-display { font-family: 'Syne', sans-serif; }
+    [contenteditable]:focus { outline: 2px solid #FF4D1C; outline-offset: 2px; border-radius: 4px; }
+    [contenteditable]:empty:before { content: attr(data-placeholder); color: #B0ACA5; pointer-events: none; }
+    .seg-btn.active { background: #0A0A0A; color: #F5F2EB; }
+    .seg-btn { transition: background 0.15s, color 0.15s; }
+    .progress-bar { transition: width 0.4s ease; }
+    .card-expand { transition: max-height 0.35s ease, opacity 0.3s ease; max-height: 0; opacity: 0; overflow: hidden; }
+    .card-expand.open { max-height: 1000px; opacity: 1; }
+    .chevron { transition: transform 0.25s ease; }
+    .chevron.open { transform: rotate(180deg); }
+    input, textarea { font-family: 'DM Sans', sans-serif; background: transparent; }
+    input:focus, textarea:focus { outline: 2px solid #FF4D1C; outline-offset: 1px; }
+    .tag { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #EDEAE2; } ::-webkit-scrollbar-thumb { background: #C8C4BC; border-radius: 3px; }
+    .nav-link { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+    .hero-line { overflow: hidden; }
+    @keyframes reveal { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .hero-line span { display: block; animation: reveal 0.7s cubic-bezier(0.16,1,0.3,1) forwards; }
+    .hero-line:nth-child(2) span { animation-delay: 0.08s; }
+    .hero-line:nth-child(3) span { animation-delay: 0.16s; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .noise { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); background-size: 128px; }
+    .section-fade { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section-fade.visible { opacity: 1; transform: translateY(0); }
+    #loading-overlay { position: fixed; inset: 0; background: #F5F2EB; display: flex; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.3s ease; }
+    #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="noise"></div>
+
+  <!-- LOADING -->
+  <div id="loading-overlay">
+    <div class="flex flex-col items-center gap-3">
+      <div class="w-6 h-6 bg-accent rounded-sm animate-pulse"></div>
+      <p class="tag text-muted">Loading board…</p>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="sticky top-0 z-50 border-b border-border bg-paper/90 backdrop-blur-sm">
+    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-6 h-6 bg-accent rounded-sm flex items-center justify-center">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2v8" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <span class="font-display font-700 text-sm tracking-tight">AI Venture Board</span>
+      </div>
+      <div class="hidden md:flex items-center gap-8">
+        <a href="#team" class="nav-link text-muted hover:text-ink transition-colors">Team</a>
+        <a href="#ideas" class="nav-link text-muted hover:text-ink transition-colors">Ideas</a>
+        <a href="#tasks" class="nav-link text-muted hover:text-ink transition-colors">Tasks</a>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="status-dot bg-green-500"></span>
+        <span class="text-xs text-muted font-body" id="nav-date"></span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="max-w-6xl mx-auto px-6 pt-16 pb-12 border-b border-border">
+    <div class="flex items-start justify-between flex-wrap gap-6">
+      <div>
+        <p class="tag text-accent mb-4">AI Business Meeting · Session 01</p>
+        <div class="hero-line"><span class="font-display text-5xl md:text-7xl font-800 leading-none tracking-tight">Build.</span></div>
+        <div class="hero-line"><span class="font-display text-5xl md:text-7xl font-800 leading-none tracking-tight text-muted">Ship.</span></div>
+        <div class="hero-line"><span class="font-display text-5xl md:text-7xl font-800 leading-none tracking-tight">Repeat.</span></div>
+      </div>
+      <div class="flex flex-col gap-3 pt-2">
+        <div class="bg-surface border border-border rounded-xl px-5 py-4 min-w-[180px]">
+          <p class="tag text-muted mb-1">Ideas</p>
+          <p class="font-display text-3xl font-700" id="idea-count">—</p>
+        </div>
+        <div class="bg-surface border border-border rounded-xl px-5 py-4">
+          <p class="tag text-muted mb-1">Team</p>
+          <p class="font-display text-3xl font-700">4</p>
+        </div>
+        <div class="bg-surface border border-border rounded-xl px-5 py-4">
+          <p class="tag text-muted mb-1">Tasks done</p>
+          <p class="font-display text-3xl font-700" id="tasks-done-count">—</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEAM -->
+  <section id="team" class="max-w-6xl mx-auto px-6 py-14 border-b border-border section-fade">
+    <p class="tag text-accent mb-8">01 — Team</p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="team-grid"></div>
+  </section>
+
+  <!-- IDEAS -->
+  <section id="ideas" class="max-w-6xl mx-auto px-6 py-14 border-b border-border section-fade">
+    <div class="flex items-end justify-between mb-8 flex-wrap gap-4">
+      <p class="tag text-accent">02 — Project Ideas</p>
+      <button onclick="addIdea()" class="flex items-center gap-2 text-xs font-display font-600 border border-border rounded-lg px-4 py-2 hover:bg-surface transition-colors">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Add idea
+      </button>
+    </div>
+    <div class="flex flex-col gap-3" id="ideas-list"></div>
+  </section>
+
+  <!-- TASKS -->
+  <section id="tasks" class="max-w-6xl mx-auto px-6 py-14 section-fade">
+    <div class="flex items-end justify-between mb-8 flex-wrap gap-4">
+      <p class="tag text-accent">03 — Action Items</p>
+      <button onclick="addTask()" class="flex items-center gap-2 text-xs font-display font-600 border border-border rounded-lg px-4 py-2 hover:bg-surface transition-colors">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Add task
+      </button>
+    </div>
+    <div class="flex flex-col gap-2" id="tasks-list"></div>
+    <p class="text-xs text-muted mt-6 font-body italic" id="tasks-empty" style="display:none">No tasks yet — click "Add task" to get started.</p>
+  </section>
+
+  <footer class="border-t border-border py-8 text-center">
+    <p class="text-xs text-muted font-body">AI Venture Board · <span contenteditable data-placeholder="Add your team name">Team Name</span> · 2026</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
