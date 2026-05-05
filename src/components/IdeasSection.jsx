@@ -1,7 +1,7 @@
 import { db } from '../lib/supabase'
 import IdeaCard from './IdeaCard'
 
-export default function IdeasSection({ ideas, setIdeas }) {
+export default function IdeasSection({ ideas, setIdeas, tasks = [], setTasks }) {
   async function addIdea() {
     const id = 'idea-' + Date.now()
     const newIdea = {
@@ -41,7 +41,14 @@ export default function IdeasSection({ ideas, setIdeas }) {
       </div>
       <div className="flex flex-col gap-3">
         {ideas.map((idea, index) => (
-          <IdeaCard key={idea.id} idea={idea} index={index} onDelete={deleteIdea} />
+          <IdeaCard
+            key={idea.id}
+            idea={idea}
+            index={index}
+            onDelete={deleteIdea}
+            tasks={tasks.filter(t => t.idea_id === idea.id)}
+            setTasks={setTasks}
+          />
         ))}
       </div>
     </section>

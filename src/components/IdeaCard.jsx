@@ -20,7 +20,7 @@ function calcProgress(fields, effort) {
   return Math.round(((filled + (effort ? 1 : 0)) / total) * 100)
 }
 
-export default function IdeaCard({ idea, index, onDelete }) {
+export default function IdeaCard({ idea, index, onDelete, tasks = [], setTasks }) {
   const [isOpen, setIsOpen] = useState(false)
   const [effort, setEffort] = useState(idea.effort || '')
   const [fields, setFields] = useState({
@@ -187,6 +187,62 @@ export default function IdeaCard({ idea, index, onDelete }) {
               placeholder="Week # or date"
               className="text-sm border border-border rounded-xl px-4 py-3 min-h-[44px]"
             />
+          </div>
+
+          <div className="md:col-span-2 border-t border-border pt-5">
+            <div className="flex items-center justify-between mb-3">
+              <label className="tag text-muted">Tasks ({tasks.length})</label>
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation()
+                  const newTask = { text: '', owner: '', due: '', done: false, idea_id: idea.id, sort_order: 0 }
+                  const { data, error } = await db.from('tasks').insert(newTask).select().single()
+                  if (!error && data) setTasks(prev => [...prev, data])
+                }}
+                className="text-xs font-display font-semibold text-muted hover:text-accent transition-colors"
+              >
+                + Add task
+              </button>
+            </div>
+            {tasks.length === 0 ? (
+              <p className="text-xs text-muted italic">No tasks linked — assign from the Tasks section or add one here.</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {tasks.map(task => (
+                  <div key={task.id} className="flex items-center gap-3 bg-surface rounded-xl px-4 py-2.5 group/task">
+                    <input
+                      type="checkbox"
+                      checked={task.done}
+                      onChange={async () => {
+                        const newDone = !task.done
+                        const newStatus = newDone ? 'done' : 'todo'
+                        await db.from('tasks').update({ done: newDone, status: newStatus }).eq('id', task.id)
+                        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: newDone, status: newStatus } : t))
+                      }}
+                      className="w-4 h-4 rounded shrink-0 cursor-pointer accent-[#FF4D1C]"
+                    />
+                    <span className={`text-sm flex-1 ${task.done ? 'line-through text-muted' : ''}`}>
+                      {task.text || <span className="text-muted italic">Untitled task</span>}
+                    </span>
+                    {task.owner && (
+                      <span className="tag text-muted">{task.owner}</span>
+                    )}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        await db.from('tasks').delete().eq('id', task.id)
+                        setTasks(prev => prev.filter(t => t.id !== task.id))
+                      }}
+                      className="opacity-0 group-hover/task:opacity-100 text-muted hover:text-accent transition-all"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M2 3.5h9M5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M10.5 3.5l-.6 7a.5.5 0 01-.5.5H3.6a.5.5 0 01-.5-.5l-.6-7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="md:col-span-2 flex items-center justify-between gap-3">

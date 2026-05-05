@@ -5,6 +5,7 @@ import Hero from './components/Hero'
 import TeamSection from './components/TeamSection'
 import IdeasSection from './components/IdeasSection'
 import TasksSection from './components/TasksSection'
+import GanttSection from './components/GanttSection'
 
 export default function App() {
   const [ideas, setIdeas] = useState([])
@@ -61,8 +62,9 @@ export default function App() {
       <Nav />
       <Hero ideasCount={ideas.length} tasksDone={tasksDone} tasksTotal={tasks.length} />
       <TeamSection />
-      <IdeasSection ideas={ideas} setIdeas={setIdeas} />
-      <TasksSection tasks={tasks} setTasks={setTasks} />
+      <IdeasSection ideas={ideas} setIdeas={setIdeas} tasks={tasks} setTasks={setTasks} />
+      <TasksSection tasks={tasks} setTasks={setTasks} ideas={ideas} />
+      <GanttSection ideas={ideas} tasks={tasks} />
       <footer className="border-t border-border py-8 text-center">
         <p className="text-xs text-muted">AI Venture Board · VentureFour · 2026</p>
       </footer>

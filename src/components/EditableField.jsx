@@ -15,6 +15,12 @@ export default function EditableField({ value, onInput, className, placeholder }
       data-placeholder={placeholder}
       className={className}
       onInput={e => onInput(e.currentTarget.textContent)}
+      onKeyDown={e => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          e.currentTarget.blur()
+        }
+      }}
     />
   )
 }
